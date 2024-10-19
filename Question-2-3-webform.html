@@ -29,108 +29,124 @@
         <h1>Feedback form</h1>
     <form>
         <div class="control">
-          <label>Full name <span class="required">*</span></label><input id="name" name="name" type="text" />
+          <!-- connect label with its associate input using for -->
+          <label for="name">Full name <span class="required">*</span></label>
+          <input id="name" name="name" type="text" aria-required="true"/>
         </div>
         <div class="control">
-          <label>Biography</label><textarea id="biography" name="biography" type="text"></textarea>
+          <!-- connect label with its associate input using for -->
+          <label for="biography">Biography</label>
+          <!-- aria-describedby use for providing additional information -->
+          <textarea id="biography" name="biography" aria-describedby="bio_help" type="text"></textarea>
           <span>Include examples on your skills in JavaScript.</span>
         </div>
         
-          <div>Gender</div>
-          <div class="control">
-            <input id="gender_male" name="gender" type="radio" value="male" /><label>Male</label>
+        <!-- grouped radio button for Accessibility -->
+        <fieldset class="control">
+          <legend>Gender</legend>
+          <div>
+            <!-- connect label with its associate input using for -->
+            <input id="gender_male" name="gender" type="radio" value="male" />
+            <label for="gender_male">Male</label>
           </div>
-          <div class="control">
-            <input id="gender_female" name="gender" type="radio" value="female" /><label>Female</label>
+          <div>
+            <!-- connect label with its associate input using for -->
+            <input id="gender_female" name="gender" type="radio" value="female" />
+            <label for="gender_female">Female</label>
           </div>
+        </fieldset>
         
         <div class="control">
-          <input id="accept_agbs" name="accept_agbs" type="checkbox" value="1" /><label>I accept the terms and conditions</label>
+          <!-- connect label with its associate input using for -->
+          <input id="accept_agbs" name="accept_agbs" type="checkbox" value="1" aria-required="true" />
+          <label for="accept_agbs">I accept the terms and conditions</label>
         </div>
         <div class="control">
-          <input name="validate" type="hidden" value="1" /><input type="submit" value="Register" />
+          <!-- screenread the this input is hidden -->
+          <input name="validate" type="hidden" value="1" aria-hidden="true" />
+          <!-- connect label with its associate input using for -->
+          <input type="submit" value="Register" id="submit_button"/>
+          <label for="submit_button">Register</label>
         </div>
       </form>
       
           <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
           <script>"use strict";
       
-      ;
       (function () {
         var validateInput;
-      
+
         $.urlParam = function (name) {
-          var results;
-          results = new RegExp('[?&]' + name + '=([^&#]*)').exec(window.location.href);
-      
-          if (results === null) {
-            return null;
-          } else {
-            return decodeURI(results[1]) || null;
-          }
-        };
-      
-        validateInput = function validateInput(input, message) {
-          var $elementToDescribe, $error, $errorContainer, $fieldset, $input, $referencedElement, value;
-          $input = $('[name="' + input + '"]');
-      
-          if ((value = $.urlParam(input)) === null) {
-            if ($('fieldset.errors').length === 0) {
-              $('form').prepend('<fieldset class="errors"><legend>Errors</legend><ul></ul></fieldset>');
-            }
-      
-            $referencedElement = null;
-            $elementToDescribe = null;
-            $errorContainer = $('fieldset.errors ul');
-      
-            if ($input.is(':radio')) {
-              $fieldset = $input.closest('fieldset');
-              $elementToDescribe = $fieldset;
-              $referencedElement = $input.filter(':first');
+            var results;
+            results = new RegExp('[?&]' + name + '=([^&#]*)').exec(window.location.href);
+
+            if (results === null) {
+                return null;
             } else {
-              $elementToDescribe = $input;
-              $referencedElement = $input;
+                return decodeURI(results[1]) || null;
             }
-      // R.G. hint: fix next line ;)
-            $error = $('<a>' + message + '</a>');
-            $error.click(function (e) {
-              // If we rely on the link's href pointing to the input's ID, it doesn't trigger forms mode in screen readers
-              $referencedElement.focus();
-              return e.preventDefault();
-            });
-            $elementToDescribe.attr('aria-describedby', input + '_description');
-            $errorContainer.append('<li>').find('li:last').append($error);
-      
-            if ($(':not(form):focus').length === 0) {
-              // See https://stackoverflow.com/questions/46134247/jquery-setting-focus-doesnt-work-in-ie11/
-            
-            }
-          } else {
-            if ($input.is(':checkbox')) {
-              $input.attr('checked', true);
-            }
-      
-            if ($input.is(':radio')) {
-              return $input.filter('[value="' + value + '"]').attr('checked', true);
-            } else {
-              return $input.val(value);
-            }
-          }
         };
-      
+
+        // Update the validateInput function to return true or false
+        validateInput = function (input, message) {
+            var $input = $('[name="' + input + '"]');
+            var value = $.urlParam(input);
+
+            if (value === null) {
+                if ($('fieldset.errors').length === 0) {
+                    $('form').prepend('<fieldset class="errors"><legend>Errors</legend><ul></ul></fieldset>');
+                }
+
+                var $errorContainer = $('fieldset.errors ul');
+                var $error = $('<a href="#' + input + '">' + message + '</a>');
+
+                $error.click(function (e) {
+                    $input.focus();
+                    e.preventDefault();
+                });
+
+                // Adding error to error list
+                $errorContainer.append('<li>').find('li:last').append($error);
+
+                // focus on error messages
+                if ($(':not(form):focus').length === 0) {
+                    $('fieldset.errors').attr('tabindex', -1).focus();
+                }
+
+                return false;
+            } else {
+                // check value of checkbox and radio
+                if ($input.is(':checkbox') || $input.is(':radio')) {
+                    $input.prop('checked', true);
+                } else {
+                    $input.val(value);
+                }
+                return true;
+            }
+        };
+
         $(document).ready(function () {
-          if ($.urlParam('validate')) {
-            validateInput('name', 'Please enter your name!');
-            validateInput('biography', 'Please tell us something about your history!');
-            validateInput('gender', 'Please tell us your gender!');
-            validateInput('accept_agbs', 'You must accept our terms and conditions!');
-      
-            if ($('.error').length === 0) {
-              return alert('All inputs are valid.');
+            if ($.urlParam('validate')) {
+                var isValid = true;
+
+                // Validating input fields
+                isValid = validateInput('name', 'Please enter your name!') && isValid;
+                isValid = validateInput('biography', 'Please tell us something about your history!') && isValid;
+                isValid = validateInput('gender', 'Please tell us your gender!') && isValid;
+                isValid = validateInput('accept_agbs', 'You must accept our terms and conditions!') && isValid;
+
+                // Only show success alert if all inputs are valid
+                if (isValid) {
+                    // clear error messages
+                    $('fieldset.errors').remove();
+
+                    // add success message
+                    $('form').append('<div role="alert" tabindex="0">All inputs are valid.</div>');
+                    $('[role="alert"]').focus();
+                }
             }
-          }
         });
-      }).call(void 0);</script>
-                
-        </body>
-      </html>
+    }).call(void 0);
+</script>
+</body>
+</html>
